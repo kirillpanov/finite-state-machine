@@ -1,59 +1,84 @@
 class FSM {
-    /**
-     * Creates new FSM instance.
-     * @param config
-     */
-    constructor(config) {}
+    constructor(config) {
+        if (!config) {
+            throw new Error('config is not definied. Set up the config');
+        };
+        this.config = config;
+        this.states = config.states;
+        this.state = config.initial;
+        this.stateLogForUndo = [this.config.initial];
+        this.stateLogForRedo = [];
+    }
+    getState() {
+        return this.state;
+    }
 
-    /**
-     * Returns active state.
-     * @returns {String}
-     */
-    getState() {}
+    changeState(state) {
+        for (let key in this.config.states) {
+            if ( key == state ) {
+                this.stateLogForUndo.push(state);
+                this.stateLogForRedo = [];
+                return this.state = state;
+            };
+        };
+        throw new Error('state does not exist. Check up the state');
+    }
 
-    /**
-     * Goes to specified state.
-     * @param state
-     */
-    changeState(state) {}
+    trigger(event) {
+        let _currentState;
+        let _stateToSet;
+        _currentState = this.getState();
+        _stateToSet = this.states[_currentState].transitions[event];
+        this.changeState(_stateToSet);
+    }
 
-    /**
-     * Changes state according to event transition rules.
-     * @param event
-     */
-    trigger(event) {}
+    reset() {
+        this.state = this.config.initial;
+    }
 
-    /**
-     * Resets FSM state to initial.
-     */
-    reset() {}
+    getStates(event) {
+        let _states = [];
+        if (!event) {
+            for (let key in this.config.states) {
+                _states.push(key); 
+            }
+        } else {
+            for (let key in this.states) {
+                if ( this.states[key].transitions[event])
+                _states.push(key); 
+            }
+        }
+        return _states;
+    }
 
-    /**
-     * Returns an array of states for which there are specified event transition rules.
-     * Returns all states if argument is undefined.
-     * @param event
-     * @returns {Array}
-     */
-    getStates(event) {}
+    undo() {
+        let _length = this.stateLogForUndo.length
+        let _stateToSet;
+        if (_length<=1) {
+            return false;
+        };
+        _stateToSet = this.stateLogForUndo.splice(-2,2);
+        this.state = _stateToSet[0];
+        this.stateLogForUndo.push(_stateToSet[0]);
+        this.stateLogForRedo.push(_stateToSet[1]);
+        return true;
+    }
 
-    /**
-     * Goes back to previous state.
-     * Returns false if undo is not available.
-     * @returns {Boolean}
-     */
-    undo() {}
+    redo() {
+        let _length = this.stateLogForRedo.length
+        let _stateToSet;
+        if (_length<1) {
+            return false;
+        };
+        _stateToSet = this.stateLogForRedo.pop();
+        this.stateLogForUndo.pop();
+        this.state = _stateToSet;
+        return true;
+    }
 
-    /**
-     * Goes redo to state.
-     * Returns false if redo is not available.
-     * @returns {Boolean}
-     */
-    redo() {}
-
-    /**
-     * Clears transition history
-     */
-    clearHistory() {}
+    clearHistory() {
+        this.stateLogForUndo = [this.config.initial];
+    }
 }
 
 module.exports = FSM;
